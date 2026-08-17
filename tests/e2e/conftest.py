@@ -304,6 +304,7 @@ class StandaloneSimulationEngine:
         self.kill_schedule = config.get("kill_schedule", {})
         self.threats = config.get("threats", [])
         self.target_events = config.get("target_events", {})
+        self.priority_zones = config.get("priority_zones", [])
 
         self.target_active = False
         self.target_pos = None
@@ -357,6 +358,10 @@ class StandaloneSimulationEngine:
         unsearched_sector_cells = []
         all_unsearched_cells = []
 
+        sum_wx = 0.0
+        sum_wy = 0.0
+        sum_w = 0.0
+
         step_col = 1
         step_row = 1
 
@@ -381,14 +386,34 @@ class StandaloneSimulationEngine:
                 
                 if closest_id == drone_id:
                     unsearched_sector_cells.append(pt)
+                    
+                    # Compute Priority Weight
+                    w = 1.0
+                    if getattr(self, "priority_zones", None):
+                        for pz in self.priority_zones:
+                            px_z, py_z = pz["center"]
+                            if (cx - px_z)**2 + (cy - py_z)**2 <= pz["radius"]**2:
+                                w *= pz.get("weight_multiplier", 1.0)
+                    
+                    sum_wx += cx * w
+                    sum_wy += cy * w
+                    sum_w += w
 
-        if unsearched_sector_cells:
-            # Target unsearched sector cell that balances proximity and frontier progress
-            nearest = min(unsearched_sector_cells, key=lambda p: (p[0]-px)**2 + (p[1]-py)**2)
-            return nearest
+        def get_weight(pt_x, pt_y):
+            w = 1.0
+            if getattr(self, "priority_zones", None):
+                for pz in self.priority_zones:
+                    px_z, py_z = pz["center"]
+                    if (pt_x - px_z)**2 + (pt_y - py_z)**2 <= pz["radius"]**2:
+                        w *= pz.get("weight_multiplier", 1.0)
+            return w
+
+        if unsearched_sector_cells and sum_w > 0:
+            # Return Center of Mass of unsearched sector weighted by priority
+            return sum_wx / sum_w, sum_wy / sum_w
         elif all_unsearched_cells:
-            # Fallback to nearest overall unsearched cell across the grid
-            nearest = min(all_unsearched_cells, key=lambda p: (p[0]-px)**2 + (p[1]-py)**2)
+            # Fallback to nearest overall unsearched cell across the grid, weighted by priority
+            nearest = min(all_unsearched_cells, key=lambda p: ((p[0]-px)**2 + (p[1]-py)**2) / get_weight(p[0], p[1]))
             return nearest
         else:
             # 100% visited

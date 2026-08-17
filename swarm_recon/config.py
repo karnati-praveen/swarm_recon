@@ -507,6 +507,7 @@ class SimulationConfig:
         jamming_center: Optional (x, y) center coordinates of circular RF jamming zone.
         jamming_radius: Radius of RF jamming zone in meters.
         mule_cache_ttl: Maximum Data Mule cache retention time in seconds.
+        priority_zones: Optional list of high-value zones dicts {"center": (x,y), "radius": r, "weight_multiplier": w}.
     """
 
     width: float = 100.0
@@ -532,6 +533,7 @@ class SimulationConfig:
     consensus_required: int = 2          # Min corroborations before full target tracking
     consensus_timeout: float = 5.0      # Seconds to wait for corroboration before rejecting
     require_hmac: bool = True            # Require HMAC verification on received packets
+    priority_zones: List[Dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Validate input ranges and types."""
@@ -616,6 +618,7 @@ class SimulationConfig:
             "jamming_center": list(self.jamming_center) if self.jamming_center is not None else None,
             "jamming_radius": float(self.jamming_radius),
             "mule_cache_ttl": float(self.mule_cache_ttl),
+            "priority_zones": self.priority_zones,
         }
 
     @classmethod
@@ -643,6 +646,7 @@ class SimulationConfig:
             jamming_center=jamming_center,
             jamming_radius=float(data.get("jamming_radius", 0.0)),
             mule_cache_ttl=float(data.get("mule_cache_ttl", 30.0)),
+            priority_zones=data.get("priority_zones", []),
         )
 
     def to_json_file(self, filepath: Union[str, Path]) -> None:
