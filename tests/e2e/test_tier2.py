@@ -47,7 +47,7 @@ def test_extreme_drone_failures(default_sim_config):
 def test_zero_threat_zones(default_sim_config):
     """E2E-T2-02: Zero threat fields (pure uninhibited coverage search)."""
     config = dict(default_sim_config)
-    config["num_drones"] = 5
+    config["num_drones"] = 10
     config["time_limit"] = 180.0
     config["threats"] = []  # Zero threat zones
 
