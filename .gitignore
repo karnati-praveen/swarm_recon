@@ -8,3 +8,4 @@ results_final.json
 _publish/
 _to_delete/
 .agents/
+.licenses/
